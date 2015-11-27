@@ -137,10 +137,11 @@ The method -finderCommentForFileURL:error: in the Controller class uses Scriptin
         /* retrieve the Finder application Scripting Bridge object. */
     FinderApplication* finder = [SBApplication applicationWithBundleIdentifier:@"com.apple.finder"];
 
-    if ( finder == nil ) {
-            /* A nil value here means the bundle id was not found or the applications does not have a 
-             * scripting interface. */
-        if ( error != NULL )
+    if(!finder) {
+        /* while we can't get an NSError at this point since SBApplication is the root of our heirarchy, 
+         * failure on the previous line means the bundle id was not found or the applications does not have a 
+         * scripting interface.  So we'll create our own error. */
+        if(error != NULL)
             *error = [NSError errorWithDomain:NSCocoaErrorDomain code:SBApplicationInstantiationError userInfo:
                         [NSDictionary dictionaryWithObject:@"Unable to create an instance of SBApplication." forKey:NSLocalizedDescriptionKey]];
 
@@ -150,17 +151,16 @@ The method -finderCommentForFileURL:error: in the Controller class uses Scriptin
         /* retrieve a reference to our finder item asking for it by location */
     FinderItem * theItem = [[finder items] objectAtLocation: theFileURL];
 
-        /* set the result.  */
-    result = theItem.comment;
-
-        /* Test for errors */
-    if ( [finder lastError] != nil ) {
-        if ( error != NULL )
-                /* retrieve the error from the parent object */
+    if(!theItem) {
+            /* retrieve the error from the parent object */
+        if(error != NULL)
             *error = [finder lastError];
 
-    return NO;
+    return nil;
     }
+
+        /* set the result.  */
+    result = theItem.comment;
 
         /* return the comment (or nil on error). */
     return result;
@@ -168,7 +168,7 @@ The method -finderCommentForFileURL:error: in the Controller class uses Scriptin
 
 Interesting items to note here are:
 
-(a) after each call to a Scripting Bridge API that executes an Apple Event we test for errors and set the error argument to the last error reported by Scripting Bridge before returning nil. Alternatively, the SBApplication class allows you to set a delegate object that implements a -eventDidFail:withError: delegate method.
+(a) after each call to a Scripting Bridge API we check if a nil value was returned and set the error argument to the last error reported by Scripting Bridge or our own error before returning nil. Alternatively, the SBApplication class allows you to set a delegate object that implements a -eventDidFail:withError: delegate method.
 
 (b) we use the +applicationWithBundleIdentifier: SBApplication class method to create our Application object.  This will dynamically load the application object based on the dictionary inside of the application itself rather than building the application class from statically compiled information.
 
@@ -188,10 +188,11 @@ The method -changeFinderComment:forFileURL: in the Controller class uses Scripti
         /* retrieve the Finder application Scripting Bridge object. */
     FinderApplication* finder = [SBApplication applicationWithBundleIdentifier:@"com.apple.finder"];
 
-    if ( finder == nil ) {
-            /* A nil value here means the bundle id was not found or the applications does not have a 
-             * scripting interface. */
-        if ( error != NULL )
+    if(!finder) {
+        /* while we can't get an NSError at this point since SBApplication is the root of our heirarchy, 
+         * failure on the previous line means the bundle id was not found or the applications does not have a 
+         * scripting interface.  So we'll create our own error. */
+        if(error != NULL)
             *error = [NSError errorWithDomain:NSCocoaErrorDomain code:SBApplicationInstantiationError userInfo:
                         [NSDictionary dictionaryWithObject:@"Unable to create an instance of SBApplication." forKey:NSLocalizedDescriptionKey]];
 
@@ -201,17 +202,16 @@ The method -changeFinderComment:forFileURL: in the Controller class uses Scripti
         /* retrieve a reference to our finder item asking for it by location */
     FinderItem * theItem = [[finder items] objectAtLocation: theFileURL];
 
+    if(!theItem) {
+        /* retrieve the error from the parent object */
+    if(error != NULL)
+        *error = [finder lastError];
+
+    return NO;
+    }
+
         /* attempt to set the comment for the Finder item.  */
     theItem.comment = comment;
-
-        /* Test for errors */
-    if ( [finder lastError] != nil ) {
-        if ( error != NULL )
-                /* retrieve the error from the parent object */
-            *error = [finder lastError];
-
-        return NO;
-    }
 
         /* return YES on success */
     return YES;
@@ -220,7 +220,7 @@ The method -changeFinderComment:forFileURL: in the Controller class uses Scripti
 
 Interesting items to note here are:
 
-(a) Again, after each call to a Scripting Bridge API that executes an Apple Event we test for errors and set the error argument to the last error reported by Scripting Bridge before returning nil. Alternatively, the SBApplication class allows you to set a delegate object that implements a -eventDidFail:withError: delegate method.
+(a) Again, after each call to a Scripting Bridge API we check if a nil value was returned and set the error argument to the last error reported by Scripting Bridge or our own error before returning nil. Alternatively, the SBApplication class allows you to set a delegate object that implements a -eventDidFail:withError: delegate method.
 
 (b) we use the +applicationWithBundleIdentifier: SBApplication class method to create our Application object.  This will dynamically load the application object based on the dictionary inside of the application itself rather than building the application class from statically compiled information.
 
